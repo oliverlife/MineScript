@@ -1,0 +1,40 @@
+<html>
+<script type="text/javascript">
+
+	var buildMine = function()
+	{
+		var cellWidth = 300;
+		var cellHeight = 300;
+		var gameZoneNode = document.getElementById("gameZoneNode");
+		var cell = document.createElement("div");
+		cell.style.position = "absolute";
+		cell.style.height = "50";
+		cell.style.width = "50";
+		cell.style.backgroundColor = "red";
+		gameZoneNode.appendChild(cell);
+		cell = document.createElement("div");
+		cell.style.position = "absolute";
+		cell.style.left = "50";
+		cell.style.height = "50";
+		cell.style.width = "50";
+		cell.style.backgroundColor = "green";
+		gameZoneNode.appendChild(cell);
+	}
+</script>
+<body id="gameZoneNode" onload="buildMine()">
+	<div>
+		<span>
+			kkk
+		</span>
+		<p id = "spantest">
+			@@@
+		</p>
+	</div>
+	<div>
+		xxxx
+		<span style="background-color:red;" onmousedown="alert('sdf')">
+			ttt
+		</span>
+	</div>
+</body>
+</html>
