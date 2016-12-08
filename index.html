@@ -1,26 +1,61 @@
 <html>
-<script type="text/javascript">
-
-	var buildMine = function()
+<script id="base-function" type="text/javascript">
+	if(typeof Object.beget !== 'function')
 	{
-		var cellWidth = 300;
-		var cellHeight = 300;
-		var gameZoneNode = document.getElementById("gameZoneNode");
-		var cell = document.createElement("div");
-		cell.style.position = "absolute";
-		cell.style.height = "50";
-		cell.style.width = "50";
-		cell.style.backgroundColor = "red";
-		gameZoneNode.appendChild(cell);
-		cell = document.createElement("div");
-		cell.style.position = "absolute";
-		cell.style.left = "50";
-		cell.style.height = "50";
-		cell.style.width = "50";
-		cell.style.backgroundColor = "green";
-		gameZoneNode.appendChild(cell);
+		Object.create = function(o)
+		{
+			var F = function(){};
+			F.prototype = o;
+			return new F();
+		}
+
+	}	
+
+	var ButtonClass = 
+	{
+		left : 0,
+		top : 0,
+		width : 0,
+		height : 0,
+		onclick : function(){},
+	}
+
+	var minesLayoutClass = 
+	{
+		at : function(i){
+			var array = this["mines-array"];
+			return array[i];
+		},
+
+		init_width_height_mines : function(w, h, mines)
+		{
+			this.w = w;
+			this.h = h;
+			this.mines = mines;
+			var mines_array = this["mines-array"] = [];
+			(function()
+			{
+				var i = 0;
+				for(; i < mines; i += 1)
+					mines_array[i] = -1;
+
+				for(; i < w * h; i += 1)
+					mines_array[i] = 0;
+
+			})();
+			return this;
+		},
 	}
 </script>
+
+<script id="game-code" type="text/javascript">
+	var w = 10;
+	var h = 5;
+	var minesNumber = 10;
+	var minesLayout = Object.create(minesLayoutClass).init_width_height_mines(w, h, minesNumber);
+	alert( minesLayout.at(9) + " " + minesLayout.at(10));
+</script>
+
 <body id="gameZoneNode" onload="buildMine()">
 	<div>
 		<span>
