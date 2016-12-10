@@ -22,26 +22,113 @@
 
 	var minesLayoutClass = 
 	{
-		at : function(i){
-			var array = this["mines-array"];
+		//修正项：参数名i,j替换为row,col
+		indexToIndex2D : function(i){
+			return [Math.floor(i / this.w), i % this.w];
+		},
+		index2DToIndex : function(i, j){//i:row, j:col
+			return i * this.w + j;
+		},
+		get : function(i){
+			var array = this["-minesArray"];
 			return array[i];
 		},
-
+		get2D : function(i, j){
+			return this.get(this.index2DToIndex(i, j));
+		},
+		set : function(i, v){
+			var array = this["-minesArray"];
+			array[i] = v;
+		},
+		set2D : function(i, j, v){
+			this.set(this.index2DToIndex(i, j), v);
+		},
+		rows : function(){
+			return this.h;
+		},
+		cols : function(){
+			return this.w;
+		},
+		// "-getNeighbor" : function(i){
+		// },
+		validateIndex2D : function(i, j){
+			return i >= 0 && i < this.rows() && j >= 0 && j < this.cols();
+		},
+		"-getNeighbor2D" : function(i, j){
+			var neighborArray = [];
+			if(this.validateIndex2D(i, j))
+			{
+				var row = i;
+				var col = j;
+				var neighborOffsetArrayIt = 0;
+				var neighborOffset = [];
+				var neighbor = [];
+				var neighborOffsetArray = [
+					[-1, -1],
+					[-1,  0],
+					[-1,  1],
+					[ 0, -1],
+					//[ 0,  0],
+					[ 0,  1],
+					[ 1, -1],
+					[ 1,  0],
+					[ 1,  1],
+				];
+				for(neighborOffsetArrayIt = 0; neighborOffsetArrayIt < neighborOffsetArray.length; neighborOffsetArrayIt += 1)
+				{
+					neighborOffset = neighborOffsetArray[neighborOffsetArrayIt];
+					neighbor = [row + neighborOffset[0], col + neighborOffset[1]];
+					if(this.validateIndex2D(neighbor[0], neighbor[1]))
+					{
+						neighborArray.push(neighbor);
+					}
+				}
+			}
+			return neighborArray;
+		},
 		init_width_height_mines : function(w, h, mines)
 		{
 			this.w = w;
 			this.h = h;
 			this.mines = mines;
-			var mines_array = this["mines-array"] = [];
+			var minesArray = this["-minesArray"] = [];
+			var _self = this;
 			(function()
 			{
 				var i = 0;
+				var j = 0;
+				var k = 0;
+				var neighborMines = 0;
 				for(; i < mines; i += 1)
-					mines_array[i] = -1;
+					minesArray[i] = -1;
 
 				for(; i < w * h; i += 1)
-					mines_array[i] = 0;
+					minesArray[i] = 0;
 
+				for(i = 0; i < w * h; i += 1)
+				{
+					var random_offset = Math.floor(Math.random() * (w * h - 1 - i));
+					//swap(minesArray[i], minesArray[i + offset]);
+					var temp = minesArray[i];
+					minesArray[i] = minesArray[i + random_offset];
+					minesArray[i + random_offset] = temp;
+				}
+				for(i = 0; i < _self.rows(); i += 1)
+				{
+					for(j = 0; j < _self.cols(); j += 1)
+					{
+						var neighborArray = _self["-getNeighbor2D"](i ,j);
+						neighborMines = 0;
+						for(k = 0; k < neighborArray.length; k += 1)
+						{
+							if(_self.get2D(neighborArray[k][0], neighborArray[k][1]) < 0)
+							{
+								neighborMines += 1;
+							}
+						}
+						_self.set2D(i, j, neighborMines);
+					}
+				}
 			})();
 			return this;
 		},
@@ -53,7 +140,6 @@
 	var h = 5;
 	var minesNumber = 10;
 	var minesLayout = Object.create(minesLayoutClass).init_width_height_mines(w, h, minesNumber);
-	alert( minesLayout.at(9) + " " + minesLayout.at(10));
 </script>
 
 <body id="gameZoneNode" onload="buildMine()">
