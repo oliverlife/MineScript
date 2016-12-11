@@ -20,39 +20,129 @@
 		onclick : function(){},
 	}
 
+	var MinesGameUIClass = 
+	{
+		buttonWidth : 30,
+		buttonHeight : 30,
+		buttonBorderStyle : "solid",
+		buttonBorderWidth : 1,
+		cellUnopenColor : "#C3C3C3",
+		cellOpenColor : "#F0EDC4",
+
+		init : function()
+		{
+			this.rows = 0;
+			this.cols = 0;
+			this.mines = 0;
+			return this;
+		},
+		reset : function(rows, cols, mines)
+		{
+			this.rows = rows;
+			this.cols = cols;
+			this.mines = mines;
+			this["-minesGame"] = Object.create(MinesGameClass).init_rows_cols_mines(rows, cols, mines);
+			this["-draw"]();
+		},
+		"-createButton" :  function(x, y)
+		{
+			var button = document.createElement("div");
+			button.style.left = x;
+			button.style.top = y;
+			button.style.width = this.buttonWidth;
+			button.style.height = this.buttonHeight;
+			button.style.position = "absolute";
+			button.style.backgroundColor = this.cellUnopenColor;
+			button.style.borderStyle = this.buttonBorderStyle;
+			button.style.borderWidth = this.buttonBorderWidth;
+			button.style.textAlign = "center";
+			button.onclick = this["-buttonAction"];
+			var node=document.createTextNode("");
+			button.appendChild(node);
+			return button;
+		},
+		"-buttonAction" : function(event)
+		{
+			var openedCellArray = event.target.game["-minesGame"].open(event.target.cellIndex[0], event.target.cellIndex[1]);
+			var i = 0;
+			for(i = 0; i < openedCellArray.length; i += 1)
+			{
+				event.target.game["-redrawCell"](openedCellArray[i][0], openedCellArray[i][1]);
+			}
+		},
+		"-draw" : function()
+		{
+			var minesCanvas = document.getElementById('GameCanvas');
+			var i = 0;
+			var j = 0;
+			var x = 0;
+			var y = 0;
+			var button;
+			this["-buttons"] = [];
+			for(i = 0; i < this.rows; i += 1)
+			{
+				x = 0;
+				this["-buttons"][i] = [];
+				for(j = 0; j < this.cols; j += 1)
+				{
+					button = this["-createButton"](x, y);
+					minesCanvas.appendChild(button);
+					button.cellIndex = [i, j];
+					button.game = this;
+					this["-buttons"][i][j] = button;
+					x += this.buttonWidth;
+				}
+				y += this.buttonHeight;
+			}
+		},
+		"-redrawCell" : function(row, col)
+		{
+			var button = this["-buttons"][row][col];
+			var status = this["-minesGame"].get(row, col);
+			if(status == MinesGameClass.unopen)
+			{
+				button.style.backgroundColor = this.cellUnopenColor;
+			}
+			else
+			{
+				button.style.backgroundColor = this.cellOpenColor;
+				button.innerHTML = status;
+			}
+		},
+	}
+
 	var MinesGameClass = 
 	{
-		var unopen : "u",
-		var rows : function()
+		unopen : "u",
+		rows : function()
 		{
 			return this["-minesLayout"].rows();
 		},
-		var cols : function()
+		cols : function()
 		{
 			return this["-minesLayout"].cols();
 		},
-		var validateIndex2D : function(row, col)
+		validateIndex2D : function(row, col)
 		{
 			return this["-minesLayout"].validateIndex2D(row, col);
 		},
-		var init_rows_cols_mines : function (rows, cols, mines)
+		init_rows_cols_mines : function (rows, cols, mines)
 		{
-			alert("successed");
-			this["-minesLayout"] = Object.create(MinesLayoutClass).init_width_height_mines(cols, rows, minesNumber);
+			this["-minesLayout"] = Object.create(MinesLayoutClass).init_width_height_mines(cols, rows, mines);
 			var gameLayout = this["-gameLayout"] = [];
 			var i = 0;
 			var j = 0;
-			for(i = 0; i < this.rows(); ++i)
+			for(i = 0; i < this.rows(); i += 1)
 			{
 				gameLayout[i] = [];
-				for(j = 0; j < this.cols(); ++j)
+				for(j = 0; j < this.cols(); j += 1)
 				{
-					gameLayout[i][j] = unopen;
+					gameLayout[i][j] = this.unopen;
 				}
 			}
-			alert("successed");
+			return this;
 		},
-		var get : function(row, col)
+		get : function(row, col)
 		{
 			var status;
 			if(this.validateIndex2D(row, col))
@@ -61,7 +151,7 @@
 			}
 			return status;
 		},
-		var set : function(row, col, status)
+		"-set" : function(row, col, status)
 		{
 			var isSet = false;
 			if(this.validateIndex2D(row, col))
@@ -71,12 +161,29 @@
 			}
 			return isSet;
 		},
-		var open : function(row ,col)
+		open : function(row ,col)
 		{
-			if(this.get(row, col) == unopen)
+			var openedCellArray = [];
+			var mines = this["-minesLayout"].get2D(row, col);
+			var neighbors;
+			var i;
+			if(this.get(row, col) == this.unopen)
 			{
-				this.set(row, col, String(this["-minesLayout"].get2D(row, col)));
+				this["-set"](row, col, String(mines));
+				if(mines == 0)
+				{
+					neighbors = this["-minesLayout"]["-getNeighbor2D"](row, col);
+					for(i = 0; i < neighbors.length; i += 1)
+					{
+						if(this["-minesLayout"].get2D(neighbors[i][0], neighbors[i][1]) >= 0)
+						{
+							openedCellArray = openedCellArray.concat(this.open(neighbors[i][0], neighbors[i][1]));
+						}
+					}
+				}
+				openedCellArray.push([row, col]);
 			}
+			return openedCellArray;
 		},
 	}
 
@@ -177,29 +284,25 @@
 				{
 					for(j = 0; j < _self.cols(); j += 1)
 					{
-						var neighborArray = _self["-getNeighbor2D"](i ,j);
-						neighborMines = 0;
-						for(k = 0; k < neighborArray.length; k += 1)
+						if(_self.get2D(i, j) == 0)
 						{
-							if(_self.get2D(neighborArray[k][0], neighborArray[k][1]) < 0)
+							var neighborArray = _self["-getNeighbor2D"](i ,j);
+							neighborMines = 0;
+							for(k = 0; k < neighborArray.length; k += 1)
 							{
-								neighborMines += 1;
+								if(_self.get2D(neighborArray[k][0], neighborArray[k][1]) < 0)
+								{
+									neighborMines += 1;
+								}
 							}
+							_self.set2D(i, j, neighborMines);
 						}
-						_self.set2D(i, j, neighborMines);
 					}
 				}
 			})();
 			return this;
 		},
 	}
-</script>
-
-<script id="game-code" type="text/javascript">
-	var cols = 10;
-	var rows = 5;
-	var mines = 10;
-	var minesLayout = Object.create(MinesGameClass).init_rows_cols_mines(rows, cols, mines);
 </script>
 
 <body id="gameZoneNode" onload="buildMine()">
@@ -217,5 +320,17 @@
 			ttt
 		</span>
 	</div>
+	<div id = "GameCanvas">
+	</div>
 </body>
+
+<script id="game-code" type="text/javascript">
+	var cols = 10;
+	var rows = 5;
+	var mines = 10;
+	var minesGame = Object.create(MinesGameUIClass).init();
+	minesGame.reset(rows, cols, mines);
+	alert("script right");
+</script>
+
 </html>
