@@ -20,7 +20,67 @@
 		onclick : function(){},
 	}
 
-	var minesLayoutClass = 
+	var MinesGameClass = 
+	{
+		var unopen : "u",
+		var rows : function()
+		{
+			return this["-minesLayout"].rows();
+		},
+		var cols : function()
+		{
+			return this["-minesLayout"].cols();
+		},
+		var validateIndex2D : function(row, col)
+		{
+			return this["-minesLayout"].validateIndex2D(row, col);
+		},
+		var init_rows_cols_mines : function (rows, cols, mines)
+		{
+			alert("successed");
+			this["-minesLayout"] = Object.create(MinesLayoutClass).init_width_height_mines(cols, rows, minesNumber);
+			var gameLayout = this["-gameLayout"] = [];
+			var i = 0;
+			var j = 0;
+			for(i = 0; i < this.rows(); ++i)
+			{
+				gameLayout[i] = [];
+				for(j = 0; j < this.cols(); ++j)
+				{
+					gameLayout[i][j] = unopen;
+				}
+			}
+			alert("successed");
+		},
+		var get : function(row, col)
+		{
+			var status;
+			if(this.validateIndex2D(row, col))
+			{
+				status = this["-gameLayout"][row][col];
+			}
+			return status;
+		},
+		var set : function(row, col, status)
+		{
+			var isSet = false;
+			if(this.validateIndex2D(row, col))
+			{
+				this["-gameLayout"][row][col] = status;
+				isSet = true;
+			}
+			return isSet;
+		},
+		var open : function(row ,col)
+		{
+			if(this.get(row, col) == unopen)
+			{
+				this.set(row, col, String(this["-minesLayout"].get2D(row, col)));
+			}
+		},
+	}
+
+	var MinesLayoutClass = 
 	{
 		//修正项：参数名i,j替换为row,col
 		indexToIndex2D : function(i){
@@ -136,10 +196,10 @@
 </script>
 
 <script id="game-code" type="text/javascript">
-	var w = 10;
-	var h = 5;
-	var minesNumber = 10;
-	var minesLayout = Object.create(minesLayoutClass).init_width_height_mines(w, h, minesNumber);
+	var cols = 10;
+	var rows = 5;
+	var mines = 10;
+	var minesLayout = Object.create(MinesGameClass).init_rows_cols_mines(rows, cols, mines);
 </script>
 
 <body id="gameZoneNode" onload="buildMine()">
