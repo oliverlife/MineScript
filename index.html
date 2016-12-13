@@ -63,12 +63,27 @@
 		},
 		"-buttonAction" : function(event)
 		{
-			var openedCellArray = event.target.game["-minesGame"].open(event.target.cellIndex.row, event.target.cellIndex.col);
-			var i = 0;
-			for(i = 0; i < openedCellArray.length; i += 1)
+			var row = event.target.cellIndex.row;
+			var col = event.target.cellIndex.col;
+			var openedCellArray = event.target.game["-minesGame"].open(row, col);
+			if(event.target.game["-minesGame"].get(row, col) == "-1")
 			{
-				event.target.game["-redrawCell"](openedCellArray[i].row, openedCellArray[i].col);
+				event.target.game["-redrawCell"](row, col);
+				setTimeout(function(){event.target.game["-didOpenMine"]();}, 0);
 			}
+			else
+			{
+				var i = 0;
+				for(i = 0; i < openedCellArray.length; i += 1)
+				{
+					event.target.game["-redrawCell"](openedCellArray[i].row, openedCellArray[i].col);
+				}
+			}
+		},
+		"-didOpenMine" : function()
+		{
+			alert("you fail");
+			this.reset(this.rows, this.cols, this.mines);
 		},
 		"-draw" : function()
 		{
@@ -304,6 +319,7 @@
 		Sweep Mines
 	</h1>
 	<div id="GameCanvas" style="position:relative;">
+
 	</div>
 </body>
 
