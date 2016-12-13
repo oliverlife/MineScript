@@ -300,30 +300,33 @@
 </script>
 
 <body id="gameZoneNode">
-	<div>
-		<span>
-			kkk
-		</span>
-		<p id = "spantest">
-			@@@
-		</p>
-	</div>
-	<div>
-		xxxx
-		<span style="background-color:red;" onmousedown="alert('sdf')">
-			ttt
-		</span>
-	</div>
-	<div id = "GameCanvas">
+	<h1 style="text-align:center">
+		Sweep Mines
+	</h1>
+	<div id="GameCanvas" style="position:relative;">
 	</div>
 </body>
 
 <script id="game-code" type="text/javascript">
-	var cols = 10;
-	var rows = 5;
-	var mines = 10;
+	var gameConfigTest = 
+	{
+		rows : 5,
+		cols : 10,
+		mines : 10,
+		gameCanvasLeft : "40%",
+	};
+	var gameConfigHighLevel = 
+	{
+		rows : 16,
+		cols : 30,
+		mines : 99,
+		gameCanvasLeft : "20%",
+	};
+	var gameConfig = gameConfigHighLevel;
+	var gameCanvas = document.getElementById("GameCanvas");
+	gameCanvas.style.left = gameConfig.gameCanvasLeft;
 	var minesGame = Object.create(MinesGameUIClass).init();
-	minesGame.reset(rows, cols, mines);
+	minesGame.reset(gameConfig.rows, gameConfig.cols, gameConfig.mines);
 </script>
 
 </html>
