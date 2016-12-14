@@ -56,7 +56,6 @@
 			button.style.borderStyle = this.buttonBorderStyle;
 			button.style.borderWidth = this.buttonBorderWidth;
 			button.style.textAlign = "center";
-			button.onclick = this["-buttonAction"];
 			var node=document.createTextNode("");
 			button.appendChild(node);
 			return button;
@@ -65,25 +64,46 @@
 		{
 			var row = event.target.cellIndex.row;
 			var col = event.target.cellIndex.col;
-			var openedCellArray = event.target.game["-minesGame"].open(row, col);
-			if(event.target.game["-minesGame"].get(row, col) == "-1")
+			var game = event.target.game;
+			var openedCellArray = game["-minesGame"].open(row, col);
+			var i = 0;
+			for(i = 0; i < openedCellArray.length; i += 1)
 			{
-				event.target.game["-redrawCell"](row, col);
-				setTimeout(function(){event.target.game["-didOpenMine"]();}, 0);
+				game["-redrawCell"](openedCellArray[i].row, openedCellArray[i].col);
 			}
-			else
+
+			if(game["-minesGame"].isFail())
 			{
-				var i = 0;
-				for(i = 0; i < openedCellArray.length; i += 1)
-				{
-					event.target.game["-redrawCell"](openedCellArray[i].row, openedCellArray[i].col);
-				}
+				game["-didFail"]();
+			}
+			if(game["-minesGame"].isWin())
+			{
+				game["-didWin"]();
 			}
 		},
-		"-didOpenMine" : function()
+		"-didFail" : function()
 		{
-			alert("you fail");
-			this.reset(this.rows, this.cols, this.mines);
+			var _self = this;
+			setTimeout(
+				function()
+				{
+					alert("you fail");
+					_self.reset(_self.rows, _self.cols, _self.mines);
+				},
+				0
+			);
+		},
+		"-didWin" : function()
+		{
+			var _self = this;
+			setTimeout(
+				function()
+				{
+					alert("you win");
+					_self.reset(_self.rows, _self.cols, _self.mines);
+				},
+				0
+			);
 		},
 		"-draw" : function()
 		{
@@ -104,6 +124,7 @@
 					minesCanvas.appendChild(button);
 					button.cellIndex = {row : i, col : j};
 					button.game = this;
+					button.onclick = this["-buttonAction"];
 					this["-buttons"][i][j] = button;
 					x += this.buttonWidth;
 				}
@@ -137,6 +158,10 @@
 		{
 			return this["-minesLayout"].cols();
 		},
+		mines : function()
+		{
+			return this["-minesLayout"].getMines();
+		},
 		validateIndex2D : function(row, col)
 		{
 			return this["-minesLayout"].validateIndex2D(row, col);
@@ -145,6 +170,8 @@
 		{
 			this["-minesLayout"] = Object.create(MinesLayoutClass).init_width_height_mines(cols, rows, mines);
 			var gameLayout = this["-gameLayout"] = [];
+			this.openedCells = 0;
+			this["-isFail"] = false;
 			var i = 0;
 			var j = 0;
 			for(i = 0; i < this.rows(); i += 1)
@@ -184,18 +211,31 @@
 			var i;
 			if(this.get(row, col) == this.unopen)
 			{
+				this.openedCells += 1;
 				this["-set"](row, col, String(mines));
 				if(mines == 0)
 				{
-					neighbors = this["-minesLayout"]["-getNeighbor2D"](row, col);
+					neighbors = this["-minesLayout"].getNeighbor2D(row, col);
 					for(i = 0; i < neighbors.length; i += 1)
 					{
 						openedCellArray = openedCellArray.concat(this.open(neighbors[i].row, neighbors[i].col));
 					}
 				}
+				else if (mines == -1)
+				{
+					this["-isFail"] = true;
+				}
 				openedCellArray.push({row : row, col : col});
 			}
 			return openedCellArray;
+		},
+		isWin : function()
+		{
+			return this.openedCells + this.mines() == this.rows() * this.cols();
+		},
+		isFail : function()
+		{
+			return this["-isFail"];
 		},
 	}
 
@@ -227,12 +267,15 @@
 		cols : function(){
 			return this.w;
 		},
+		getMines : function(){
+			return this.mines;
+		},
 		// "-getNeighbor" : function(i){
 		// },
 		validateIndex2D : function(row, col){
 			return row >= 0 && row < this.rows() && col >= 0 && col < this.cols();
 		},
-		"-getNeighbor2D" : function(row, col){
+		getNeighbor2D : function(row, col){
 			var neighborArray = [];
 			if(this.validateIndex2D(row, col))
 			{
@@ -295,7 +338,7 @@
 					{
 						if(_self.get2D(i, j) == 0)
 						{
-							var neighborArray = _self["-getNeighbor2D"](i ,j);
+							var neighborArray = _self.getNeighbor2D(i ,j);
 							neighborMines = 0;
 							for(k = 0; k < neighborArray.length; k += 1)
 							{
@@ -338,7 +381,7 @@
 		mines : 99,
 		gameCanvasLeft : "20%",
 	};
-	var gameConfig = gameConfigHighLevel;
+	var gameConfig = gameConfigTest;
 	var gameCanvas = document.getElementById("GameCanvas");
 	gameCanvas.style.left = gameConfig.gameCanvasLeft;
 	var minesGame = Object.create(MinesGameUIClass).init();
