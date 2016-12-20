@@ -232,9 +232,9 @@
 		"-addFormulas" : function(formulas)
 		{
 			var returnValue = [];
-			for(var formula in formulas)
+			for(var index in formulas)
 			{
-				returnValue.push(this["-addFormula"](formula));
+				returnValue.push(this["-addFormula"](formulas[index]));
 			}
 			return returnValue;
 		},
@@ -261,9 +261,9 @@
 			else
 			{
 				this["formulaSet"].push(formula);
-				for(var item in formula.items)
+				for(var index in formula.items)
 				{
-					var itemKey = item.toString();
+					var itemKey = formula.items[index].toString();
 					if(this["-relatedFormulaSet"][itemKey] == undefined)
 						this["-relatedFormulaSet"][itemKey] = [];
 
@@ -291,8 +291,9 @@
 				{
 					var items = [];
 					neighborArray = MinesLayoutClass.getNeighbor2D(row, col);
-					for(var neighbor in neighborArray)
+					for(var index in neighborArray)
 					{
+						var neighbor = neighborArray[index];
 						if(minesGame.isOpened(neighbor.row, neighbor.col))
 						{
 							var neighborValue = parseInt(minesGame.get(neighbor.row, neighbor.col));
