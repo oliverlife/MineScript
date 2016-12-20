@@ -196,7 +196,38 @@
 		},
 		"-formulaItemEqual" : function(a, b)
 		{
-			return this["-formulaItemCompare"] == 0;
+			return this["-formulaItemCompare"](a, b) == 0;
+		},
+		"-formulaItemsEqual" : function(a, b)
+		{
+			if(a.items.length != b.items.length)
+				return false;
+
+			var aIndex = 0;
+			var bIndex = 0;
+			while(aIndex < a.items.length && bIndex < b.items.length && this["-formulaItemEqual"](a.items[aIndex], b.items[bIndex]))
+			{
+				aIndex += 1;
+				bIndex += 1;
+			}
+
+			return (aIndex == a.items.length) && (bIndex == b.items.length);
+		},
+		"-findSameFormula" : function(formula)
+		{
+			var sameFormula;
+			if(formula.items.length <= 0)
+				return sameFormula;
+
+			var relatedFormulas = this["relatedFormulaSet"][formula.items[0].toString];
+			var i = 0;
+			while(!this["-formulaItemsEqual"](relatedFormulas[i], formula))
+			{
+				i += 1;
+			}
+			sameFormula = relatedFormulas[i];
+
+			return sameFormula;
 		},
 		"-addFormulas" : function(formulas)
 		{
@@ -212,24 +243,45 @@
 			if(formula == undefined)
 				return false;
 
-			formula.items.sort(MinesGameAutoRunClass["-formulaItemCompare"]);
-			if(typeof value == "number")
-				formula.value = {lInterval:formula.value, rInterval:formula.value + 1};
-
-			//muffin：重复push修正
-			this["-formulaSet"].push(formula);
-			var formulaIndex = this["-formulaSet"].length - 1;
-			for(var item in formula.items)
+			var sameFormula = this["-findSameFormula"](formula);
+			if(sameFormula)
 			{
-				var itemKey = item.toString();
-				if(this["-relatedFormulaSet"][itemKey] == undefined)
-					this["-relatedFormulaSet"][itemKey] = [];
+				if(formula.value.lInterval > sameFormula.value.lInterval)
+				{
+					sameFormula.value.lInterval = formula.value.lInterval;
+				}
 
-				this["-relatedFormulaSet"][itemKey].push(formulaIndex);
+				if(formula.value.rInterval < sameFormula.value.rInterval)
+				{
+					sameFormula.value.rInterval = formula.value.rInterval;
+				}
+
+				//muffin:lInterval must < rInterval -- ignore check;
+			}
+			else
+			{
+				this["formulaSet"].push(formula);
+				for(var item in formula.items)
+				{
+					var itemKey = item.toString();
+					if(this["-relatedFormulaSet"][itemKey] == undefined)
+						this["-relatedFormulaSet"][itemKey] = [];
+
+					this["-relatedFormulaSet"][itemKey].push(formula);
+				}
 			}
 			return true;
 		},
-		"-generateFormulasOptimize" : function(row, col)
+		"-createFormula" : function(items, value)
+		{
+			items.sort(MinesGameAutoRunClass["-formulaItemCompare"]);
+			if(typeof value == "number")
+				value = {lInterval:value, rInterval:value + 1};
+
+			//muffin:lInterval must < rInterval -- ignore check;
+			return {items : items, value : value};
+		},
+		"-generateFormulasOptimize" : function(row, col)//exclude opened cell(item);
 		{
 			var formulas = [];
 			if(minesGame.isOpened(row, col))
@@ -251,18 +303,18 @@
 						}
 						else
 						{
-							items.push({row : neighbor.row, col : neighbor.col})
+							items.push(neighbor)
 						}
 					}
 					if(items.length > 0)
 					{
-						formulas.push({items:items, value:value});
+						formulas.push(this["-createFormula"](items, value));
 					}
 				}
 			}
 			else
 			{
-				formulas.push({items:[{row : row, col : col}], value:{lInterval : 0, rInterval : 2}});
+				formulas.push(this["-createFormula"]([{row : row, col : col}], {lInterval : 0, rInterval : 2}));
 			}
 
 			return formulas;
@@ -275,22 +327,22 @@
 				var value = parseInt(minesGame.get(row, col));
 				if(value >= 0)
 				{
-					formulas.push({items:[{row : row, col : col}], value:0});
+					formulas.push(this["-createFormula"]([{row : row, col : col}], 0));
 
 					var items = MinesLayoutClass.getNeighbor2D(row, col);
 					if(items.length > 0)
 					{
-						formulas.push({items:items, value:value});
+						formulas.push(this["-createFormula"](items, value));
 					}
 				}
 				else
 				{
-					formulas.push({items:[{row : row, col : col}], value:1});
+					formulas.push(this["-createFormula"]([{row : row, col : col}], 1));
 				}
 			}
 			else
 			{
-				formulas.push({items:[{row : row, col : col}], value:{lInterval : 0, rInterval : 2}});
+				formulas.push(this["-createFormula"]([{row : row, col : col}], {lInterval : 0, rInterval : 2}));
 			}
 
 			return formulas;
