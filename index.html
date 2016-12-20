@@ -229,7 +229,7 @@
 			}
 			return true;
 		},
-		"-createFormulas" : function(row, col)
+		"-generateFormulasOptimize" : function(row, col)
 		{
 			var formulas = [];
 			if(minesGame.isOpened(row, col))
@@ -237,8 +237,6 @@
 				var value = parseInt(minesGame.get(row, col));
 				if(value >= 0)
 				{
-					formulas.push({items:[{row : row, col : col}], value:0});
-
 					var items = [];
 					neighborArray = MinesLayoutClass.getNeighbor2D(row, col);
 					for(var neighbor in neighborArray)
@@ -261,16 +259,44 @@
 						formulas.push({items:items, value:value});
 					}
 				}
+			}
+			else
+			{
+				formulas.push({items:[{row : row, col : col}], value:{lInterval : 0, rInterval : 2}});
+			}
+
+			return formulas;
+		},
+		"-generateFormulas" : function(row, col)
+		{
+			var formulas = [];
+			if(minesGame.isOpened(row, col))
+			{
+				var value = parseInt(minesGame.get(row, col));
+				if(value >= 0)
+				{
+					formulas.push({items:[{row : row, col : col}], value:0});
+
+					var items = MinesLayoutClass.getNeighbor2D(row, col);
+					if(items.length > 0)
+					{
+						formulas.push({items:items, value:value});
+					}
+				}
 				else
 				{
 					formulas.push({items:[{row : row, col : col}], value:1});
 				}
 			}
+			else
+			{
+				formulas.push({items:[{row : row, col : col}], value:{lInterval : 0, rInterval : 2}});
+			}
+
 			return formulas;
 		},
 		rebuild : function()
 		{
-			//muffin：0 <= (row, col) < 2;
 			var minesGame = this["-minesGame"];
 			if(!minesGame.isFail())
 			{
@@ -284,7 +310,7 @@
 				{
 					for(col = 0; col < minesGame.cols(); col += 1)
 					{
-						this["-addFormulas"](this["-createFormulas"](row, col));
+						this["-addFormulas"](this["-generateFormulasOptimize"](row, col));
 					}
 				}
 			}
