@@ -176,6 +176,123 @@
 		},
 	}
 
+	var MinesGameAutoRunClass = 
+	{
+		init : function(minesGame)
+		{
+			this["-minesGame"] = minesGame;
+			this["-formulaSet"] = [];
+			this["-relatedFormulaSet"] = {};
+		},
+		"-formulaItemCompare" : function(a, b)
+		{
+			if((a.row < b.row ) || (a.row == b.row && a.col < b.col))
+				return -1;
+
+			if(a.row == b.row && a.col == b.col)
+				return 0;
+
+			return 1;
+		},
+		"-formulaItemEqual" : function(a, b)
+		{
+			return this["-formulaItemCompare"] == 0;
+		},
+		"-addFormulas" : function(formulas)
+		{
+			var returnValue = [];
+			for(var formula in formulas)
+			{
+				returnValue.push(this["-addFormula"](formula));
+			}
+			return returnValue;
+		},
+		"-addFormula" : function(formula)
+		{
+			if(formula == undefined)
+				return false;
+
+			formula.items.sort(MinesGameAutoRunClass["-formulaItemCompare"]);
+			if(typeof value == "number")
+				formula.value = {lInterval:formula.value, rInterval:formula.value + 1};
+
+			//muffin：重复push修正
+			this["-formulaSet"].push(formula);
+			var formulaIndex = this["-formulaSet"].length - 1;
+			for(var item in formula.items)
+			{
+				var itemKey = item.toString();
+				if(this["-relatedFormulaSet"][itemKey] == undefined)
+					this["-relatedFormulaSet"][itemKey] = [];
+
+				this["-relatedFormulaSet"][itemKey].push(formulaIndex);
+			}
+			return true;
+		},
+		"-createFormulas" : function(row, col)
+		{
+			var formulas = [];
+			if(minesGame.isOpened(row, col))
+			{
+				var value = parseInt(minesGame.get(row, col));
+				if(value >= 0)
+				{
+					formulas.push({items:[{row : row, col : col}], value:0});
+
+					var items = [];
+					neighborArray = MinesLayoutClass.getNeighbor2D(row, col);
+					for(var neighbor in neighborArray)
+					{
+						if(minesGame.isOpened(neighbor.row, neighbor.col))
+						{
+							var neighborValue = parseInt(minesGame.get(neighbor.row, neighbor.col));
+							if(neighborValue == -1)
+							{
+								value -= 1;
+							}
+						}
+						else
+						{
+							items.push({row : neighbor.row, col : neighbor.col})
+						}
+					}
+					if(items.length > 0)
+					{
+						formulas.push({items:items, value:value});
+					}
+				}
+				else
+				{
+					formulas.push({items:[{row : row, col : col}], value:1});
+				}
+			}
+			return formulas;
+		},
+		rebuild : function()
+		{
+			//muffin：0 <= (row, col) < 2;
+			var minesGame = this["-minesGame"];
+			if(!minesGame.isFail())
+			{
+				this["-formulaSet"] = [];
+				this["-relatedFormulaSet"] = {};
+				var formulaSet = this["-formulaSet"];
+				var relatedFormulaSet = this["-relatedFormulaSet"];
+				var row = 0;
+				var col = 0;
+				for(row = 0; row < minesGame.rows(); row += 1)
+				{
+					for(col = 0; col < minesGame.cols(); col += 1)
+					{
+						this["-addFormulas"](this["-createFormulas"](row, col));
+					}
+				}
+			}
+
+			return !minesGame.isFail();
+		},
+	}
+
 	var MinesGameClass = 
 	{
 		unopen : "u",
@@ -204,6 +321,16 @@
 		{
 			return this["-minesLayout"].validateIndex2D(row, col);
 		},
+		isOpened : function(row, col)
+		{
+			var status = this.get(row, col);
+			return status != MinesGameClass.unopen && status != MinesGameClass.mineFlag;
+		},
+		// isMine : function(row, col)
+		// {
+		// 	var value = parseInt(this["-gameLayout"].get(row, col));
+		// 	if(neighborValue == -1)
+		// },
 		init_rows_cols_mines : function (rows, cols, mines)
 		{
 			this["-minesLayout"] = Object.create(MinesLayoutClass).init_width_height_mines(cols, rows, mines);
