@@ -276,9 +276,9 @@
 		{
 			items.sort(MinesGameAutoRunClass["-formulaItemCompare"]);
 			if(typeof value == "number")
-				value = {lInterval:value, rInterval:value + 1};
+				value = {lInterval:value, rInterval:value};
 
-			//muffin:lInterval must < rInterval -- ignore check;
+			//muffin:lInterval must <= rInterval -- ignore check;
 			return {items : items, value : value};
 		},
 		"-generateFormulasOptimize" : function(row, col)//exclude opened cell(item);
@@ -286,9 +286,9 @@
 			var formulas = [];
 			if(minesGame.isOpened(row, col))
 			{
-				var value = parseInt(minesGame.get(row, col));
-				if(value >= 0)
+				if(!minesGame.isMine(row, col))
 				{
+					var value = parseInt(minesGame.get(row, col));
 					var items = [];
 					neighborArray = MinesLayoutClass.getNeighbor2D(row, col);
 					for(var index in neighborArray)
@@ -296,8 +296,7 @@
 						var neighbor = neighborArray[index];
 						if(minesGame.isOpened(neighbor.row, neighbor.col))
 						{
-							var neighborValue = parseInt(minesGame.get(neighbor.row, neighbor.col));
-							if(neighborValue == -1)
+							if(minesGame.isMine(neighbor.row, neighbor.col))
 							{
 								value -= 1;
 							}
@@ -405,11 +404,15 @@
 			var status = this.get(row, col);
 			return status != MinesGameClass.unopen && status != MinesGameClass.mineFlag;
 		},
-		// isMine : function(row, col)
-		// {
-		// 	var value = parseInt(this["-gameLayout"].get(row, col));
-		// 	if(neighborValue == -1)
-		// },
+		isMine : function(row, col)
+		{
+			return this["-gameLayout"].get(row, col) == '-1';
+		},
+		getNeighborMines : function(row, col)
+		{
+			var value =  parseInt(minesGame.get(row, col));
+			return value >= 0 ? value : NaN;
+		},
 		init_rows_cols_mines : function (rows, cols, mines)
 		{
 			this["-minesLayout"] = Object.create(MinesLayoutClass).init_width_height_mines(cols, rows, mines);
