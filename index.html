@@ -200,26 +200,30 @@
 		},
 		"-formulaItemsEqual" : function(a, b)
 		{
-			if(a.items.length != b.items.length)
+			return this["-itemsEqual"](a.items, b.items);
+		},
+		"-itemsEqual" : function(itemsA, itemsB)
+		{
+			if(itemA.length != itemsB.length)
 				return false;
 
 			var aIndex = 0;
 			var bIndex = 0;
-			while(aIndex < a.items.length && bIndex < b.items.length && this["-formulaItemEqual"](a.items[aIndex], b.items[bIndex]))
+			while(aIndex < itemsA.length && bIndex < itemsB.length && this["-formulaItemEqual"](itemsA[aIndex], itemsB[bIndex]))
 			{
 				aIndex += 1;
 				bIndex += 1;
 			}
 
-			return (aIndex == a.items.length) && (bIndex == b.items.length);
+			return (aIndex == itemsA.length) && (bIndex == itemsB.length);
 		},
-		"-findSameFormula" : function(formula)
+		"-getSameFormula" : function(formula)
 		{
 			var sameFormula;
 			if(formula.items.length <= 0)
 				return sameFormula;
 
-			var relatedFormulas = this["relatedFormulaSet"][formula.items[0].toString];
+			var relatedFormulas = this["-relatedFormulaSet"][formula.items[0].toString];
 			var i = 0;
 			while(!this["-formulaItemsEqual"](relatedFormulas[i], formula))
 			{
@@ -228,6 +232,85 @@
 			sameFormula = relatedFormulas[i];
 
 			return sameFormula;
+		},
+		"-compareFormulaItems" : function(formulaA, formulaB)
+		{
+			var itemsA = formulaA.items;
+			var itemsB = formulaB.items;
+			var i = 0;
+			var j = 0;
+			var diffItemsA = [];
+			var diffItemsB = [];
+			var sameItems = [];
+			while(i < itemsA.length && j < itemsB.length)
+			{
+				if(this["-formulaItemCompare"](itemsA[i], itemsB[j]) == 0)
+				{
+					sameItems.push(itemsA[i]);
+					i += 1;
+					j += 1;
+				}
+				else if(this["-formulaItemCompare"](itemsA[i], itemsB[j]) < 0)
+				{
+					diffItemsA.push(itemsA[i]);
+					i += 1;
+				}
+				else
+				{
+					diffItemsB.push(itemsB[j]);
+					j += 1;
+				}
+			}
+			while(i < itemsA.length)
+			{
+				diffItemsA.push(itemsA[i]);
+				i += 1;
+			}
+			while(j < itemsB.length)
+			{
+				diffItemsB.push(itemsB[j]);
+				j += 1;
+			}
+			return {'sameItems' : sameItems, 'diffItemsA' : diffItemsA, 'diffItemsB' : diffItemsB};
+		},
+		"-isEquation" : function(formula)
+		{
+			return formula.value.lInterval == formula.value.rInterval;
+		},
+		"-deduceFormula" : function(formulaA, formulaB)
+		{
+			var deduceFormula = null;
+			var formulaBig = formulaA;
+			var formulaSmall = formulaB;
+			if(formulaA.items.length < formulaB.items.length)
+			{
+				formulaBig = formulaB;
+				formulaSmall = formulaA;
+			}
+			var compareResult = this["-compareFormulaItems"](formulaBig, formulaSmall);
+			if(!this["-itemsEqual"](compareResult.sameItems, formulaSmall))
+				return deduceFormula;
+
+			if(this["-isEquation"](formulaSmall))
+			{
+				deduceFormula = this["-createFormula"](
+						compareResult.diffItemsA, 
+						{
+							lInterval : formulaBig.value.lInterval - formulaSmall.value.lInterval,
+							rInterval : formulaBig.value.rInterval - formulaSmall.value.rInterval
+						});
+			}
+			else if(this["-isEquation"](formulaBig))
+			{
+				deduceFormula = this["-createFormula"](
+						compareResult.diffItemsA, 
+						{
+							lInterval : formulaBig.value.lInterval - formulaSmall.value.rInterval,
+							rInterval : formulaBig.value.lInterval - formulaSmall.value.lInterval
+						});
+			}
+
+			return deduceFormula;
 		},
 		"-addFormulas" : function(formulas)
 		{
@@ -243,7 +326,7 @@
 			if(formula == undefined)
 				return false;
 
-			var sameFormula = this["-findSameFormula"](formula);
+			var sameFormula = this["-getSameFormula"](formula);
 			if(sameFormula)
 			{
 				if(formula.value.lInterval > sameFormula.value.lInterval)
@@ -256,7 +339,7 @@
 					sameFormula.value.rInterval = formula.value.rInterval;
 				}
 
-				//muffin:lInterval must < rInterval -- ignore check;
+				//muffin:lInterval must <= rInterval -- ignore check;
 			}
 			else
 			{
@@ -314,7 +397,7 @@
 			}
 			else
 			{
-				formulas.push(this["-createFormula"]([{row : row, col : col}], {lInterval : 0, rInterval : 2}));
+				formulas.push(this["-createFormula"]([{row : row, col : col}], {lInterval : 0, rInterval : 1}));
 			}
 
 			return formulas;
@@ -324,9 +407,9 @@
 			var formulas = [];
 			if(minesGame.isOpened(row, col))
 			{
-				var value = parseInt(minesGame.get(row, col));
-				if(value >= 0)
+				if(!minesGame.isMine(row, col))
 				{
+					var value = parseInt(minesGame.get(row, col));
 					formulas.push(this["-createFormula"]([{row : row, col : col}], 0));
 
 					var items = MinesLayoutClass.getNeighbor2D(row, col);
@@ -342,7 +425,7 @@
 			}
 			else
 			{
-				formulas.push(this["-createFormula"]([{row : row, col : col}], {lInterval : 0, rInterval : 2}));
+				formulas.push(this["-createFormula"]([{row : row, col : col}], {lInterval : 0, rInterval : 1}));
 			}
 
 			return formulas;
